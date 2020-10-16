@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const mongodb = require('mongodb');
 const mongo = mongodb.MongoClient;
-const { map, isNil, path, lensProp, over, take } = require("ramda");
+const { map, isNil, path, lensProp, over, take, pipe, prop, assoc, length } = require("ramda");
 
 const CONNECTION_STRING = process.env.MONGO_URI;
 const BOARDS_COLLECTION = "messageBoard.boards";
@@ -36,7 +36,13 @@ const handleDbErr = (err, res) => {
 
 const responsesLens = lensProp('replies');
 const limitRepliesTo3 = over(responsesLens, take(3));
-const limitTo3Replies = map(limitRepliesTo3)
+const getRepliesCount = pipe(prop('replies'), length);
+const setReplyCount = thread => assoc("replycount", getRepliesCount(thread), thread);
+
+const limitTo3RepliesWithReplyCount = pipe(
+    map(setReplyCount),
+    map(limitRepliesTo3),
+);
 
 module.exports = {
     CONNECTION_STRING,
@@ -45,5 +51,5 @@ module.exports = {
     connectToDb,
     getThreadFromDbRes,
     handleDbErr,
-    limitTo3Replies,
+    limitTo3RepliesWithReplyCount,
 }

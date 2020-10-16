@@ -27,14 +27,13 @@
         currentURL = currentURL.split('/');
 
         var url = "/api/replies/"+currentURL[0];
-        $('#threadTitle').text(window.location.pathname);
+        $('#threadTitle').text(decodeURI(window.location.pathname));
         $.ajax({
           type: "GET",
           url: url,
-          data:{thread_id: currentURL[1]},
-          success: function(ele)
-          {
-            var boardThreads= [];
+          data: { thread_id: currentURL[1] },
+          success: function (ele) {
+            var boardThreads = [];
             //
             // THIS ARRAY SET UP IS FOR CODE READABILITIES AND TESTING!
             // THIS IS NOT WHAT IT WOULD LOOK LIKE TO GO LIVE

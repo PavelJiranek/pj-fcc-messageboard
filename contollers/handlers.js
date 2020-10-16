@@ -4,7 +4,7 @@ const {
     handleDbErr,
     getThreadFromDbRes,
     encryptPwd,
-    limitTo3Replies,
+    limitTo3RepliesWithReplyCount,
 } = require('./utils')
 
 /**
@@ -53,7 +53,7 @@ const getRecentThreads = (db, req, res) => {
         .limit(10)
         .toArray()
         .then(
-            threads => res.send(limitTo3Replies(threads)),
+            threads => res.send(limitTo3RepliesWithReplyCount(threads)),
             err => handleDbErr(err, res),
         );
 }
