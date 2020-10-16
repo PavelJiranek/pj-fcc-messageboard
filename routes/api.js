@@ -8,8 +8,11 @@
 
 'use strict';
 
-const { postNewThread } = require('../contollers/handler');
 const { connectToDb } = require('../contollers/utils');
+const {
+    postNewThread,
+    getRecentThreads,
+} = require('../contollers/handlers');
 
 
 module.exports = function (app) {
@@ -18,7 +21,12 @@ module.exports = function (app) {
 
     app.route('/api/threads/:board')
         .post(async (req, res) => {
-            connectToDb(db).then(connection => postNewThread(connection, req, res));
+            db = await connectToDb(db)
+            postNewThread(db, req, res);
+        })
+        .get(async (req, res) => {
+            db = await connectToDb(db)
+            getRecentThreads(db, req, res);
         });
 
     app.route('/api/replies/:board');

@@ -4,6 +4,7 @@ const {
     handleDbErr,
     getThreadFromDbRes,
     encryptPwd,
+    limitTo3Replies,
 } = require('./utils')
 
 /**
@@ -39,8 +40,27 @@ const postNewThread = (db, req, res) => {
 
 }
 
+const getRecentThreads = (db, req, res) => {
+    const { params: { board } } = req;
+
+    db.collection(BOARDS_COLLECTION)
+        .find({ board })
+        .project({
+            delete_password: 0,
+            reported: 0,
+        })
+        .sort({ bumped_on: -1 })
+        .limit(10)
+        .toArray()
+        .then(
+            threads => res.send(limitTo3Replies(threads)),
+            err => handleDbErr(err, res),
+        );
+}
+
 module.exports = {
     postNewThread,
+    getRecentThreads,
 }
 
 
