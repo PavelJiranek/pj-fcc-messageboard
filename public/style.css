@@ -117,5 +117,3 @@ input[type="text"]:focus, textarea {
   background-color: var(--secondary);
   transition: background-color 200ms ease-in-out;
 }
-
-
