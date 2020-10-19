@@ -22,7 +22,7 @@ const comparePwd = (plainTextPwd, hashedPwd, callback) => bcrypt.compare(
 const connectToDb = async db => {
     if (isNil(db)) {
         console.log("Connecting to the db...");
-        db = await mongo.connect(CONNECTION_STRING).then(client => {
+        db = await mongo.connect(CONNECTION_STRING, { useUnifiedTopology: true }).then(client => {
                 console.log("Successful database connection");
                 return client.db(process.env.MONGO_DB);
             }, err => console.log("Database error: " + err),

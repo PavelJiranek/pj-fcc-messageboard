@@ -24,15 +24,13 @@ const createThread = (threadFields = {}, done) => {
             ...threadFields,
             delete_password: DELETE_PWD,
         })
-        .end(function (err, res) {
-            done(res);
-        });
+        .end((err, res) => done(res));
 }
 
 const getLatestThread = (done) => {
     chai.request(server)
         .get(`/api/threads/${BOARD_NAME}`)
-        .end(function (err, res) {
+        .end((err, res) => {
             const latestThread = res.body[0];
             done(latestThread);
         });
@@ -42,6 +40,31 @@ const createAndGetThread = done => {
     createThread({ text: 'testing thread' },
         () => getLatestThread((thread) => {
             done(thread)
+        }),
+    );
+};
+
+const createAndGetThreadWithReply = done => {
+    createThread({ text: 'testing thread' },
+        () => getLatestThread((thread) => {
+            chai.request(server)
+                .post(`/api/replies/${BOARD_NAME}`)
+                .send({
+                    thread_id: thread._id,
+                    text: 'testing reply',
+                    delete_password: DELETE_PWD,
+                })
+                .end(() => {
+                    chai.request(server)
+                        .get(`/api/replies/${BOARD_NAME}`)
+                        .query({
+                            thread_id: thread._id,
+                        })
+                        .end((err, res) => {
+                            const reply = res.body.replies[0];
+                            done(thread, reply)
+                        })
+                })
         }),
     );
 };
@@ -223,7 +246,33 @@ suite('Functional Tests', function () {
         });
 
         suite('PUT', function () {
+            test('Report a reply', function (done) {
+                createAndGetThreadWithReply((
+                    { _id: thread_id },
+                    { _id: reply_id, reported: reply_reported }) => {
+                    assert.equal(reply_reported, false); // sanity check
 
+                    chai.request(server)
+                        .put(`/api/replies/${BOARD_NAME}`)
+                        .send({
+                            thread_id,
+                            reply_id,
+                        })
+                        .end(function (err, res) {
+                            assert.equal(res.status, 200);
+                            assert.equal(res.text, SUCCESS_MESSAGE);
+
+                            getLatestThread(({ replies }) => {
+                                const [latestReply] = replies;
+
+                                assert.equal(latestReply._id, reply_id);
+                                assert.equal(latestReply.reported, true);
+
+                                done();
+                            })
+                        });
+                });
+            })
         });
 
         suite('DELETE', function () {

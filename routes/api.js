@@ -15,7 +15,8 @@ const {
     reportThread,
     deleteThread,
     postNewReply,
-    getThreadReplies
+    getThreadReplies,
+    reportReply
 } = require('../contollers/handlers');
 
 
@@ -50,6 +51,10 @@ module.exports = function (app) {
         .get(async (req, res) => {
             db = await connectToDb(db)
             getThreadReplies(db, req, res);
+        })
+        .put(async (req, res) => {
+            db = await connectToDb(db)
+            reportReply(db, req, res);
         });
 
 };

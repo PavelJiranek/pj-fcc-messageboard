@@ -106,7 +106,13 @@ const getThreadReplies = (db, req, res) => {
     const threadId = getObjectId(thread_id)
 
     db.collection(BOARDS_COLLECTION)
-        .findOne({ _id: threadId }, { delete_password: 0, reported: 0 })
+        .findOne({ _id: threadId }, {
+                projection: {
+                    delete_password: false,
+                    reported: false,
+                },
+            },
+        )
         .then(
             thread => res.send(thread),
             err => handleDbErr(err, res),
@@ -129,6 +135,26 @@ const reportThread = (db, req, res) => {
                     res.send(UPDATE_FAILED_MESSAGE);
                 }
             },
+            () => res.send(UPDATE_FAILED_MESSAGE),
+        );
+}
+
+const reportReply = (db, req, res) => {
+    const { body: { thread_id, reply_id } } = req;
+    const threadId = getObjectId(thread_id);
+
+    db.collection(BOARDS_COLLECTION)
+        .findOneAndUpdate(
+            { _id: threadId },
+            {
+                $set: { "replies.$[reply].reported": true },
+                $currentDate: { bumped_on: true },
+            },
+            {
+                arrayFilters: [{ "reply._id": reply_id }],
+            },
+        )
+        .then(() => res.send(SUCCESS_MESSAGE),
             () => res.send(UPDATE_FAILED_MESSAGE),
         );
 }
@@ -167,6 +193,7 @@ module.exports = {
     deleteThread,
     postNewReply,
     getThreadReplies,
+    reportReply,
     INCORRECT_PWD_MESSAGE,
     SUCCESS_MESSAGE,
 }
