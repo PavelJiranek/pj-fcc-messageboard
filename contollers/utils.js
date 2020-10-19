@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const mongodb = require('mongodb');
 const mongo = mongodb.MongoClient;
+const ObjectId = mongodb.ObjectID;
 const { map, isNil, path, lensProp, over, take, pipe, prop, assoc, length } = require("ramda");
 
 const CONNECTION_STRING = process.env.MONGO_URI;
@@ -48,6 +49,8 @@ const limitTo3RepliesWithReplyCount = pipe(
     map(limitRepliesTo3),
 );
 
+const getObjectId = id => ObjectId(id.trim());
+
 module.exports = {
     CONNECTION_STRING,
     BOARDS_COLLECTION,
@@ -56,5 +59,6 @@ module.exports = {
     getThreadFromDbRes,
     handleDbErr,
     limitTo3RepliesWithReplyCount,
-    comparePwd
+    comparePwd,
+    getObjectId,
 }

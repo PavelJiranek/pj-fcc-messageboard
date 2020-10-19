@@ -1,6 +1,5 @@
 const { isNil } = require("ramda");
-const mongodb = require('mongodb');
-const ObjectId = mongodb.ObjectID;
+
 const {
     BOARDS_COLLECTION,
     handleDbErr,
@@ -8,7 +7,12 @@ const {
     encryptPwd,
     comparePwd,
     limitTo3RepliesWithReplyCount,
-} = require('./utils')
+    getObjectId,
+} = require('./utils');
+
+const SUCCESS_MESSAGE = 'success';
+const UPDATE_FAILED_MESSAGE = 'update failed';
+const INCORRECT_PWD_MESSAGE = 'incorrect password';
 
 /**
  *
@@ -61,12 +65,30 @@ const getRecentThreads = (db, req, res) => {
         );
 }
 
-const DELETE_SUCCESSFUL_MESSAGE = 'success';
-const INCORRECT_PWD_MESSAGE = 'incorrect password';
+const reportThread = (db, req, res) => {
+    const { body: { thread_id } } = req;
+    const threadId = getObjectId(thread_id);
+
+    db.collection(BOARDS_COLLECTION)
+        .updateOne(
+            { _id: threadId },
+            { $set: { reported: true, bumped_on: new Date() } },
+        )
+        .then(({ modifiedCount }) => {
+                if (modifiedCount === 1) {
+                    res.send(SUCCESS_MESSAGE);
+                } else {
+                    res.send(UPDATE_FAILED_MESSAGE);
+                }
+            },
+            () => res.send(UPDATE_FAILED_MESSAGE),
+        );
+}
+
 
 const deleteThread = (db, req, res) => {
     const { body: { thread_id, delete_password } } = req;
-    const threadId = ObjectId(thread_id);
+    const threadId = getObjectId(thread_id);
 
     db.collection(BOARDS_COLLECTION)
         .findOne({ _id: threadId }, { delete_password: 1 })
@@ -77,7 +99,7 @@ const deleteThread = (db, req, res) => {
                         db.collection(BOARDS_COLLECTION)
                             .deleteOne({ _id: threadId })
                             .then(({ deletedCount }) => deletedCount === 1
-                                ? res.send(DELETE_SUCCESSFUL_MESSAGE)
+                                ? res.send(SUCCESS_MESSAGE)
                                 : res.send(INCORRECT_PWD_MESSAGE),
                             );
                     } else {
@@ -93,9 +115,10 @@ const deleteThread = (db, req, res) => {
 module.exports = {
     postNewThread,
     getRecentThreads,
+    reportThread,
     deleteThread,
     INCORRECT_PWD_MESSAGE,
-    DELETE_SUCCESSFUL_MESSAGE,
+    SUCCESS_MESSAGE,
 }
 
 

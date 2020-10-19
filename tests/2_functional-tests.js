@@ -11,7 +11,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
 const server = require('../server');
-const { INCORRECT_PWD_MESSAGE, DELETE_SUCCESSFUL_MESSAGE } = require('../contollers/handlers');
+const { INCORRECT_PWD_MESSAGE, SUCCESS_MESSAGE } = require('../contollers/handlers');
 
 chai.use(chaiHttp);
 
@@ -102,7 +102,7 @@ suite('Functional Tests', function () {
                             })
                             .end(function (err, res) {
                                 assert.equal(res.status, 200);
-                                assert.equal(res.text, DELETE_SUCCESSFUL_MESSAGE)
+                                assert.equal(res.text, SUCCESS_MESSAGE)
 
                                 done();
                             });
@@ -130,7 +130,23 @@ suite('Functional Tests', function () {
         });
 
         suite('PUT', function () {
+            test('Report a thread', function (done) {
+                const threadText = `thread to be reported ${new Date()}`;
+                createThread({ text: threadText },
+                    () => getLatestThread(({ _id }) => {
+                        chai.request(server)
+                            .put(`/api/threads/${BOARD_NAME}`)
+                            .send({
+                                thread_id: _id,
+                            })
+                            .end(function (err, res) {
+                                assert.equal(res.status, 200);
+                                assert.equal(res.text, SUCCESS_MESSAGE)
 
+                                done();
+                            });
+                    }))
+            })
         });
 
 
