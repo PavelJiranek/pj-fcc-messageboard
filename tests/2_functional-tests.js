@@ -11,35 +11,46 @@ const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
 const server = require('../server');
+const { INCORRECT_PWD_MESSAGE, DELETE_SUCCESSFUL_MESSAGE } = require('../contollers/handlers');
 
 chai.use(chaiHttp);
 
 const BOARD_NAME = `functional-tests-${new Date().getTime()}`;
+const DELETE_PWD = "pwd";
 
 const createThread = (threadFields = {}, done) => {
     chai.request(server)
         .post(`/api/threads/${BOARD_NAME}`)
         .send({
             ...threadFields,
-            delete_password: "pwd",
+            delete_password: DELETE_PWD,
         })
         .end(function (err, res) {
             done(res);
         });
 }
 
+const getLatestThread = (done) => {
+    chai.request(server)
+        .get(`/api/threads/${BOARD_NAME}`)
+        .end(function (err, res) {
+            const latestThread = res.body[0];
+            done(latestThread);
+        });
+}
+
 suite('Functional Tests', function () {
-    this.timeout(25000); // for db connection
+    this.timeout(60000); // for db connection
 
     suite('API ROUTING FOR /api/threads/:board', function () {
 
         suite('POST', function () {
             test('POST a new thread and redirect', function (done) {
-                    chai.request(server)
-                        .post(`/api/threads/${BOARD_NAME}`)
-                        .send({
-                            text: "text",
-                            delete_password: "pwd",
+                chai.request(server)
+                    .post(`/api/threads/${BOARD_NAME}`)
+                    .send({
+                        text: "text",
+                        delete_password: "pwd",
                         })
                         .end(function (err, res) {
                             assert.equal(res.status, 200);
@@ -79,7 +90,43 @@ suite('Functional Tests', function () {
         });
 
         suite('DELETE', function () {
+            test("DELETE a thread", function (done) {
+                const threadText = `thread to be deleted ${new Date()}`;
+                createThread({ text: threadText },
+                    () => getLatestThread(({ _id }) => {
+                        chai.request(server)
+                            .delete(`/api/threads/${BOARD_NAME}`)
+                            .send({
+                                thread_id: _id,
+                                delete_password: DELETE_PWD,
+                            })
+                            .end(function (err, res) {
+                                assert.equal(res.status, 200);
+                                assert.equal(res.text, DELETE_SUCCESSFUL_MESSAGE)
 
+                                done();
+                            });
+                    }))
+            });
+
+            test("try to DELETE a thread with incorrect pwd", function (done) {
+                const threadText = `thread to be deleted ${new Date()}`;
+                createThread({ text: threadText },
+                    () => getLatestThread(({ _id }) => {
+                        chai.request(server)
+                            .delete(`/api/threads/${BOARD_NAME}`)
+                            .send({
+                                thread_id: _id,
+                                delete_password: "incorrect pwd",
+                            })
+                            .end(function (err, res) {
+                                assert.equal(res.status, 200);
+                                assert.equal(res.text, INCORRECT_PWD_MESSAGE)
+
+                                done();
+                            });
+                    }))
+            })
         });
 
         suite('PUT', function () {

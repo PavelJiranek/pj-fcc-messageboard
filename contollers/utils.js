@@ -14,6 +14,10 @@ const encryptPwd = (threadBody, callback) => bcrypt.hash(threadBody.delete_passw
     })
 });
 
+const comparePwd = (plainTextPwd, hashedPwd, callback) => bcrypt.compare(
+    plainTextPwd, hashedPwd, (err, success) => callback(!err && success),
+);
+
 const connectToDb = async db => {
     if (isNil(db)) {
         console.log("Connecting to the db...");
@@ -52,4 +56,5 @@ module.exports = {
     getThreadFromDbRes,
     handleDbErr,
     limitTo3RepliesWithReplyCount,
+    comparePwd
 }

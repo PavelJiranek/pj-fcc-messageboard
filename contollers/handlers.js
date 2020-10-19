@@ -1,9 +1,12 @@
-const {  } = require("ramda");
+const { isNil } = require("ramda");
+const mongodb = require('mongodb');
+const ObjectId = mongodb.ObjectID;
 const {
     BOARDS_COLLECTION,
     handleDbErr,
     getThreadFromDbRes,
     encryptPwd,
+    comparePwd,
     limitTo3RepliesWithReplyCount,
 } = require('./utils')
 
@@ -58,9 +61,41 @@ const getRecentThreads = (db, req, res) => {
         );
 }
 
+const DELETE_SUCCESSFUL_MESSAGE = 'success';
+const INCORRECT_PWD_MESSAGE = 'incorrect password';
+
+const deleteThread = (db, req, res) => {
+    const { body: { thread_id, delete_password } } = req;
+    const threadId = ObjectId(thread_id);
+
+    db.collection(BOARDS_COLLECTION)
+        .findOne({ _id: threadId }, { delete_password: 1 })
+        .then(thread => {
+            if (!isNil(thread)) {
+                comparePwd(delete_password, thread.delete_password, pwdMatching => {
+                    if (pwdMatching) {
+                        db.collection(BOARDS_COLLECTION)
+                            .deleteOne({ _id: threadId })
+                            .then(({ deletedCount }) => deletedCount === 1
+                                ? res.send(DELETE_SUCCESSFUL_MESSAGE)
+                                : res.send(INCORRECT_PWD_MESSAGE),
+                            );
+                    } else {
+                        res.send(INCORRECT_PWD_MESSAGE);
+                    }
+                })
+            } else {
+                res.send(INCORRECT_PWD_MESSAGE);
+            }
+        })
+}
+
 module.exports = {
     postNewThread,
     getRecentThreads,
+    deleteThread,
+    INCORRECT_PWD_MESSAGE,
+    DELETE_SUCCESSFUL_MESSAGE,
 }
 
 
