@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const mongodb = require('mongodb');
 const mongo = mongodb.MongoClient;
 const ObjectId = mongodb.ObjectID;
-const { map, isNil, path, lensProp, over, take, pipe, prop, assoc, length } = require("ramda");
+const { map, isNil, path, lensProp, over, take, propEq, pipe, curry, prop, assoc, length, find } = require("ramda");
 
 const CONNECTION_STRING = process.env.MONGO_URI;
 const BOARDS_COLLECTION = "messageBoard.boards";
@@ -51,6 +51,12 @@ const limitTo3RepliesWithReplyCount = pipe(
 
 const getObjectId = id => ObjectId(id.trim());
 
+const getReplyById = curry((id, replies) => find(propEq('_id', id))(replies));
+const getReplyPwdById = (id, replies) => pipe(
+    getReplyById(id),
+    prop('delete_password'),
+)(replies);
+
 module.exports = {
     CONNECTION_STRING,
     BOARDS_COLLECTION,
@@ -61,4 +67,5 @@ module.exports = {
     limitTo3RepliesWithReplyCount,
     comparePwd,
     getObjectId,
+    getReplyPwdById,
 }

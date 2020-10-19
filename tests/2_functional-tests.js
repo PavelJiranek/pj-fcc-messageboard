@@ -16,6 +16,7 @@ chai.use(chaiHttp);
 
 const BOARD_NAME = `functional-tests-${new Date().getTime()}`;
 const DELETE_PWD = "pwd";
+const TESTING_REPLY_TEXT = 'testing reply';
 
 const createThread = (threadFields = {}, done) => {
     chai.request(server)
@@ -51,7 +52,7 @@ const createAndGetThreadWithReply = done => {
                 .post(`/api/replies/${BOARD_NAME}`)
                 .send({
                     thread_id: thread._id,
-                    text: 'testing reply',
+                    text: TESTING_REPLY_TEXT,
                     delete_password: DELETE_PWD,
                 })
                 .end(() => {
@@ -276,7 +277,54 @@ suite('Functional Tests', function () {
         });
 
         suite('DELETE', function () {
+            test('DELETE a reply', function (done) {
+                createAndGetThreadWithReply((
+                    { _id: thread_id },
+                    { _id: reply_id, text: reply_text }) => {
+                    assert.equal(reply_text, TESTING_REPLY_TEXT); // sanity check
 
+                    chai.request(server)
+                        .delete(`/api/replies/${BOARD_NAME}`)
+                        .send({
+                            thread_id,
+                            reply_id,
+                            delete_password: DELETE_PWD,
+                        })
+                        .end(function (err, res) {
+                            assert.equal(res.status, 200);
+                            assert.equal(res.text, SUCCESS_MESSAGE);
+
+                            getLatestThread(({ replies }) => {
+                                const [latestReply] = replies;
+
+                                assert.equal(latestReply._id, reply_id);
+                                assert.equal(latestReply.text, "[deleted]");
+
+                                done();
+                            })
+                        });
+                });
+            })
+
+            test('try to DELETE a reply with incorrect pwd', function (done) {
+                createAndGetThreadWithReply((
+                    { _id: thread_id },
+                    { _id: reply_id }) => {
+                    chai.request(server)
+                        .delete(`/api/replies/${BOARD_NAME}`)
+                        .send({
+                            thread_id,
+                            reply_id,
+                            delete_password: "incorrect pwd",
+                        })
+                        .end(function (err, res) {
+                            assert.equal(res.status, 200);
+                            assert.equal(res.text, INCORRECT_PWD_MESSAGE);
+
+                            done();
+                        })
+                });
+            })
         });
 
     });

@@ -9,6 +9,7 @@ const {
     comparePwd,
     limitTo3RepliesWithReplyCount,
     getObjectId,
+    getReplyPwdById,
 } = require('./utils');
 
 const SUCCESS_MESSAGE = 'success';
@@ -165,7 +166,7 @@ const deleteThread = (db, req, res) => {
     const threadId = getObjectId(thread_id);
 
     db.collection(BOARDS_COLLECTION)
-        .findOne({ _id: threadId }, { delete_password: 1 })
+        .findOne({ _id: threadId }, { projection: { delete_password: true } })
         .then(thread => {
             if (!isNil(thread)) {
                 comparePwd(delete_password, thread.delete_password, pwdMatching => {
@@ -186,6 +187,42 @@ const deleteThread = (db, req, res) => {
         })
 }
 
+const deleteReply = (db, req, res) => {
+    const { body: { thread_id, delete_password, reply_id } } = req;
+    const threadId = getObjectId(thread_id);
+
+    db.collection(BOARDS_COLLECTION)
+        .findOne({ _id: threadId }, { projection: { replies: true } })
+        .then(thread => {
+            if (!isNil(thread)) {
+                const replyPassword = getReplyPwdById(reply_id, thread.replies);
+
+                comparePwd(delete_password, replyPassword, pwdMatching => {
+                    if (pwdMatching) {
+                        db.collection(BOARDS_COLLECTION)
+                            .findOneAndUpdate(
+                                { _id: threadId },
+                                {
+                                    $set: { "replies.$[reply].text": "[deleted]" },
+                                    $currentDate: { bumped_on: true },
+                                },
+                                {
+                                    arrayFilters: [{ "reply._id": reply_id }],
+                                },
+                            )
+                            .then(() => res.send(SUCCESS_MESSAGE),
+                                () => res.send(UPDATE_FAILED_MESSAGE),
+                            );
+                    } else {
+                        res.send(INCORRECT_PWD_MESSAGE);
+                    }
+                })
+            } else {
+                res.send(INCORRECT_PWD_MESSAGE);
+            }
+        })
+}
+
 module.exports = {
     postNewThread,
     getRecentThreads,
@@ -194,6 +231,7 @@ module.exports = {
     postNewReply,
     getThreadReplies,
     reportReply,
+    deleteReply,
     INCORRECT_PWD_MESSAGE,
     SUCCESS_MESSAGE,
 }

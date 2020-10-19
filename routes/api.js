@@ -16,7 +16,8 @@ const {
     deleteThread,
     postNewReply,
     getThreadReplies,
-    reportReply
+    reportReply,
+    deleteReply
 } = require('../contollers/handlers');
 
 
@@ -55,6 +56,10 @@ module.exports = function (app) {
         .put(async (req, res) => {
             db = await connectToDb(db)
             reportReply(db, req, res);
+        })
+        .delete(async (req, res) => {
+            db = await connectToDb(db)
+            deleteReply(db, req, res);
         });
 
 };
