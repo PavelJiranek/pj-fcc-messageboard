@@ -1,4 +1,5 @@
-const { isNil } = require("ramda");
+const { isNil, omit } = require("ramda");
+const createId = require("create-id");
 
 const {
     BOARDS_COLLECTION,
@@ -27,7 +28,6 @@ const newThreadMapper = (body, board) => {
         created_on: new Date(),
         bumped_on: new Date(),
         reported: false,
-        delete_password: body.delete_password,
         replies: [],
     }
 };
@@ -44,7 +44,43 @@ const postNewThread = (db, req, res) => {
                 },
                 err => handleDbErr(err, res));
     })
+}
 
+/**
+ *
+ * @param {replyBody} body
+ * @returns replyDto
+ */
+const newReplyMapper = (body) => {
+    return omit(['thread_id'], {
+        ...body,
+        created_on: new Date(),
+        reported: false,
+        delete_password: body.delete_password,
+        _id: createId(),
+    });
+};
+
+const postNewReply = (db, req, res) => {
+    const { body, params: { board } } = req;
+    const mappedReply = newReplyMapper(body);
+    const threadId = getObjectId(body.thread_id)
+
+    encryptPwd(mappedReply, reply => {
+        db.collection(BOARDS_COLLECTION).updateOne(
+            { _id: threadId },
+            {
+                $push: { replies: reply },
+                $set: { bumped_on: new Date() },
+            },
+        )
+            .then(({ modifiedCount }) => {
+                    if (modifiedCount === 1) {
+                        res.redirect(`/b/${board}/${threadId}`);
+                    }
+                },
+                err => handleDbErr(err, res));
+    })
 }
 
 const getRecentThreads = (db, req, res) => {
@@ -117,6 +153,7 @@ module.exports = {
     getRecentThreads,
     reportThread,
     deleteThread,
+    postNewReply,
     INCORRECT_PWD_MESSAGE,
     SUCCESS_MESSAGE,
 }
@@ -137,4 +174,15 @@ module.exports = {
  *
  * @typedef {threadBody & threadDtoOnlyFields} threadDto
  *
+ *
+ * @typedef replyBody
+ * @property {string|undefined} thread_id
+ * @property {string} text
+ * @property {string} delete_password
+ *
+ * @typedef replyDtoOnlyFields
+ * @property {string} _id
+ * @property {reported} boolean
+ *
+ * @typedef {replyBody & replyDtoOnlyFields} replyDto
  */

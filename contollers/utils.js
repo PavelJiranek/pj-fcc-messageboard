@@ -8,9 +8,9 @@ const CONNECTION_STRING = process.env.MONGO_URI;
 const BOARDS_COLLECTION = "messageBoard.boards";
 const SALT_ROUNDS = 12;
 
-const encryptPwd = (threadBody, callback) => bcrypt.hash(threadBody.delete_password, SALT_ROUNDS, (err, hash) => {
+const encryptPwd = (threadOrReply, callback) => bcrypt.hash(threadOrReply.delete_password, SALT_ROUNDS, (err, hash) => {
     callback({
-        ...threadBody,
+        ...threadOrReply,
         delete_password: hash,
     })
 });

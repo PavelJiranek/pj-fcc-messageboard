@@ -14,6 +14,7 @@ const {
     getRecentThreads,
     reportThread,
     deleteThread,
+    postNewReply
 } = require('../contollers/handlers');
 
 
@@ -40,6 +41,10 @@ module.exports = function (app) {
         });
 
 
-    app.route('/api/replies/:board');
+    app.route('/api/replies/:board')
+        .post(async (req, res) => {
+            db = await connectToDb(db)
+            postNewReply(db, req, res);
+        });
 
 };

@@ -312,6 +312,11 @@ cors@^2.8.1:
     object-assign "^4"
     vary "^1"
 
+create-id@^1.0.2:
+  version "1.0.2"
+  resolved "https://verdaccio.commity.cz/create-id/-/create-id-1.0.2.tgz#f78343d23933e5e0b13fd98f77605eeb1241b66c"
+  integrity sha512-oVTYRlQfcYjTDvim0xMXrMa6pucsGo2hpEwZatQ3PTEzy2MSu09jEZ1RFjAjKTiU8U3tMIDdkh97Bh8QhBz45Q==
+
 cross-env@^7.0.2:
   version "7.0.2"
   resolved "https://verdaccio.commity.cz/cross-env/-/cross-env-7.0.2.tgz#bd5ed31339a93a3418ac4f3ca9ca3403082ae5f9"

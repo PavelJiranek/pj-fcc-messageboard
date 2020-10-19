@@ -9,7 +9,6 @@
 const chaiHttp = require('chai-http');
 const chai = require('chai');
 const assert = chai.assert;
-const expect = chai.expect;
 const server = require('../server');
 const { INCORRECT_PWD_MESSAGE, SUCCESS_MESSAGE } = require('../contollers/handlers');
 
@@ -38,6 +37,14 @@ const getLatestThread = (done) => {
             done(latestThread);
         });
 }
+
+const createAndGetThread = done => {
+    createThread({ text: 'testing thread' },
+        () => getLatestThread((thread) => {
+            done(thread)
+        }),
+    );
+};
 
 suite('Functional Tests', function () {
     this.timeout(60000); // for db connection
@@ -155,7 +162,28 @@ suite('Functional Tests', function () {
     suite('API ROUTING FOR /api/replies/:board', function () {
 
         suite('POST', function () {
+            test('POST a new reply and redirect', function (done) {
+                const replyText = `reply ${new Date()}`;
+                createAndGetThread(({ _id }) => {
+                        chai.request(server)
+                            .post(`/api/replies/${BOARD_NAME}`)
+                            .send({
+                                thread_id: _id,
+                                text: replyText,
+                                delete_password: DELETE_PWD,
+                            })
+                            .end(function (err, res) {
+                                assert.equal(res.status, 200);
+                                assert.match(res.redirects[0], new RegExp(`${BOARD_NAME}/${_id}`));
 
+                                getLatestThread(({ replies }) => {
+                                    assert.equal(replies[0].text, replyText);
+                                    done();
+                                })
+                            });
+                    },
+                );
+            })
         });
 
         suite('GET', function () {
