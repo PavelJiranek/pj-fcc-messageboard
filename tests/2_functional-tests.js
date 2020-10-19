@@ -148,11 +148,12 @@ suite('Functional Tests', function () {
                             })
                             .end(function (err, res) {
                                 assert.equal(res.status, 200);
-                                assert.equal(res.text, SUCCESS_MESSAGE)
+                                assert.equal(res.text, SUCCESS_MESSAGE);
 
                                 done();
                             });
-                    }))
+                    })
+                )
             })
         });
 
@@ -178,16 +179,47 @@ suite('Functional Tests', function () {
 
                                 getLatestThread(({ replies }) => {
                                     assert.equal(replies[0].text, replyText);
+
                                     done();
                                 })
                             });
-                    },
-                );
+                });
             })
         });
 
         suite('GET', function () {
+            test('GET thread with replies', function (done) {
+                const replyText = `reply ${new Date()}`;
+                createAndGetThread(({ _id }) => {
+                    chai.request(server)
+                        .post(`/api/replies/${BOARD_NAME}`)
+                        .send({
+                            thread_id: _id,
+                            text: replyText,
+                            delete_password: DELETE_PWD,
+                        })
+                        .end(function () {
+                            chai.request(server)
+                                .get(`/api/replies/${BOARD_NAME}`)
+                                .query({
+                                    thread_id: _id,
+                                })
+                                .end(function (err, res) {
+                                    assert.equal(res.body._id, _id);
+                                    assert.equal(res.body.replies.length, 1);
+                                    assert.equal(res.body.replies[0].text, replyText);
+                                    assert.property(res.body, "text");
+                                    assert.property(res.body, "created_on");
+                                    assert.property(res.body, "bumped_on");
+                                    assert.property(res.body, "_id");
+                                    assert.isUndefined(res.body.reported);
+                                    assert.isUndefined(res.body.delete_password);
 
+                                    done();
+                                });
+                        });
+                });
+            })
         });
 
         suite('PUT', function () {

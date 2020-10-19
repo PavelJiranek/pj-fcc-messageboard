@@ -101,6 +101,18 @@ const getRecentThreads = (db, req, res) => {
         );
 }
 
+const getThreadReplies = (db, req, res) => {
+    const { query: { thread_id } } = req;
+    const threadId = getObjectId(thread_id)
+
+    db.collection(BOARDS_COLLECTION)
+        .findOne({ _id: threadId }, { delete_password: 0, reported: 0 })
+        .then(
+            thread => res.send(thread),
+            err => handleDbErr(err, res),
+        );
+}
+
 const reportThread = (db, req, res) => {
     const { body: { thread_id } } = req;
     const threadId = getObjectId(thread_id);
@@ -154,6 +166,7 @@ module.exports = {
     reportThread,
     deleteThread,
     postNewReply,
+    getThreadReplies,
     INCORRECT_PWD_MESSAGE,
     SUCCESS_MESSAGE,
 }
